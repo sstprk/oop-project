@@ -8,8 +8,9 @@ class PhysicsObject {
     PhysicsObject(double mass) {
         this.mass = mass;
     }
+
     //Get method for mass attribute
-    double getMass() {
+    public double getMass() {
         return mass;
     }
 }
@@ -18,6 +19,7 @@ class PhysicsObject {
 class SolidObject extends PhysicsObject {
     private double volume;
     private double height;
+    private double density = mass / volume;
 
     SolidObject(double mass, double volume, double height) {
         super(mass);
@@ -32,9 +34,9 @@ class SolidObject extends PhysicsObject {
     public double getHeight() {
         return height;
     }
-    
-    public double calculateDensity() {
-        return mass / volume;
+
+    public double getDensity() {
+        return density;
     }
 }
 
@@ -42,12 +44,14 @@ class SolidObject extends PhysicsObject {
 class LiquidObject extends PhysicsObject {
     private double volume;
     private double height;
+    private double density = mass / volume;
 
     LiquidObject(double mass, double volume) {
         super(mass);
         this.volume = volume;
     }
-    //Get method for volume attribute
+
+    //Get methods for each attribute
     public double getVolume() {
         return volume;
     }
@@ -55,12 +59,17 @@ class LiquidObject extends PhysicsObject {
     public double getHeight() {
         return height;
     }
-}
+
+    public double getDensity() {
+        return density;
+    }
+}   
 
 //Gas object class inherited from object class
 class GasObject extends PhysicsObject {
     private double volume;
     private double atmosphericPressure;
+    private double density = mass / volume;
 
     GasObject(double mass, double volume, double atmosphericPressure) {
         super(mass);
@@ -68,12 +77,17 @@ class GasObject extends PhysicsObject {
         this.atmosphericPressure = atmosphericPressure;
     }
 
+    //Get methods for each attribute
     public double getVolume() {
         return volume;
     }
 
     public double getAtmPressure () {
         return atmosphericPressure;
+    }
+
+    public double getDensity() {
+        return density;
     }
 
 }
@@ -83,49 +97,57 @@ abstract class Motion {
     abstract double calculateDistance(double initialVelocity, double time);
 }
 
-//Motion calculator inherited from abstract motion class
-class MotionCalculator extends Motion {
-    //Distance calculator for two different instances with overloading
-    @Override
-    double calculateDistance(double initialVelocity, double time) {
-        return initialVelocity * time;
-    }
-
-    double calculateDistance(double initialVelocity, double acceleration, double time) {
-        return initialVelocity * time + 0.5 * acceleration * time * time;
-    }
-}
-
-// Yöntem (Methods)
+//A class to use the formulas
 class PhysicsLibrary {
-    static final double GRAVITY = 9.8;
+    public final double GRAVITY = 9.8;
 
-    // Fazladan Yükleme (Overloading)
-    static double calculateKineticEnergy(double mass, double velocity) {
+    PhysicsLibrary () {
+        
+    }
+    
+    //Method to calculate liquid pressure
+    public double calculateLiqPressure(double height, double density) {
+        return height * density * GRAVITY;
+    }
+    
+    public double calculateLiqPressure(LiquidObject object) {
+        return object.getHeight() * object.getDensity() * GRAVITY;
+    }
+
+    //Method to calculate kinetic energy
+    public double calculateKineticEnergy(double mass, double velocity) throws IllegalArgumentException {
+        if (mass < 0) {
+            throw new IllegalArgumentException("Invalid mass");
+        }
         return 0.5 * mass * velocity * velocity;
     }
 
-    //
-    static double calculateKineticEnergy(SolidObject object, double velocity) {
+    public double calculateKineticEnergy(SolidObject object, double velocity) throws IllegalArgumentException {
+        if (object.getMass() < 0) {
+            throw new IllegalArgumentException("Invalid mass");
+        }
         return 0.5 * object.getMass() * velocity * velocity;
     }
 
-    static double calculateKineticEnergy(LiquidObject object, double velocity) {
-        return 0.5 * object.getMass() * velocity * velocity;
-    }
-
-    // Exception (İstisna)
-    static double calculatePotentialEnergy(SolidObject object) throws IllegalArgumentException {
+    //Method to calculate potential energy
+    public double calculatePotentialEnergy(SolidObject object) throws IllegalArgumentException {
         if (object.getMass() < 0 || object.getHeight() < 0) {
             throw new IllegalArgumentException("Invalid mass or height");
         }
-         // Yerçekimi sabiti (m/s^2)
         return object.getMass() * GRAVITY * object.getHeight();
     }
 
-    // Erişim Belirleme
-    public static class PublicClass {
-        // Kamuya açık iç içe sınıf
+    //An inner class inherited from the abstract class
+    class MotionCalculator extends Motion {
+        //Method to calculate distance
+        @Override
+        public double calculateDistance(double initialVelocity, double time) {
+            return initialVelocity * time;
+        }
+
+        public double calculateDistance(double initialVelocity, double acceleration, double time) {
+            return initialVelocity * time + 0.5 * acceleration * time * time;
+        }
     }
 }
 
@@ -136,16 +158,17 @@ public class PhysicsMain {
         PhysicsObject object = new PhysicsObject(5.0);
         SolidObject solidObject = new SolidObject(10.0, 2.0, 12.0);
         LiquidObject liquidObject = new LiquidObject(8.0, 3.0);
+        PhysicsLibrary physics = new PhysicsLibrary();
 
-        MotionCalculator calculator = new MotionCalculator();
+        PhysicsLibrary.MotionCalculator calculator = physics.new MotionCalculator();
         double distance = calculator.calculateDistance(10.0, 2.0);
         System.out.println("Distance: " + distance);
 
         try {
-            double kineticEnergy = PhysicsLibrary.calculateKineticEnergy(2.0, 3.0);
+            double kineticEnergy = physics.calculateKineticEnergy(2.0, 3.0);
             System.out.println("Kinetic Energy: " + kineticEnergy);
-        } catch (IllegalArgumentException e) {
-            System.out.println("Exception: " + e.getMessage());
+        } catch (IllegalArgumentException ex) {
+            System.out.println("Exception: " + ex.getMessage());
         }
     }
 }
